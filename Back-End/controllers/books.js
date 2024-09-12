@@ -24,13 +24,18 @@ exports.getBestRating = (req, res, next) => {
 };
 
 exports.createBook = (req, res, next) => {
-    delete req.body.userId;
+    const bookObject = JSON.parse(req.body.book); // Transformer la chaîne de caractères en objet
+    delete bookObject._id; // Supprimer l'ID au cas où
+
     const book = new Book({
-        ...req.body
+        ...bookObject,
+        // Créer l'URL de l'image pour l'enregistrer dans la base de données
+        imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`
     });
+
     book.save()
-    .then(() => res.status(201).json({message: 'Livre enregistré !'}))
-    .catch(error => res.status(400).json({error}));
+    .then(() => res.status(201).json({ message: 'Livre enregistré avec succès !' }))
+    .catch(error => res.status(400).json({ error }));
 };
 
 exports.modifyBook = (req, res, next) => {
