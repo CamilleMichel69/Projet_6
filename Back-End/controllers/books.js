@@ -137,8 +137,8 @@ exports.createRating = (req, res, next) => {
     const { rating } = req.body;
     const userId = req.auth.userId;
 
-    // Vérifier que la note est valide (entre 1 et 5)
-    if (rating < 1 || rating > 5) {
+    // Vérifier que la note est valide (entre 0 et 5)
+    if (rating < 0 || rating > 5) {
         return res.status(400).json({ message: "La note doit être comprise entre 1 et 5." });
     }
 
@@ -170,5 +170,3 @@ exports.createRating = (req, res, next) => {
         })
         .catch(error => res.status(500).json({ error }));
 };
-
-
