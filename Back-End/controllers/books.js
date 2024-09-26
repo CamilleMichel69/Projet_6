@@ -53,26 +53,56 @@ exports.createBook = (req, res, next) => {
 };
 
 exports.modifyBook = (req, res, next) => {
-    const bookObject = req.file ? {
-        ...JSON.parse(req.body.book),
-        imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`
-    } : { ...req.body };
-    delete bookObject._userId;
-    Book.findOne({_id: req.params.id})
+    Book.findOne({ _id: req.params.id })
         .then((book) => {
             if (book.userId != req.auth.userId) {
-                res.status(401).json({ message : 'Not authorized'});
+                return res.status(401).json({ message: 'Not authorized' });
+            }
+
+            const bookObject = req.file ? {
+                ...JSON.parse(req.body.book),
+                imageUrl: `${req.protocol}://${req.get('host')}/images/compressed-${req.file.filename.split('.')[0]}.webp`
+            } : { ...req.body };
+            delete bookObject._userId;
+
+            const handleBookUpdate = () => {
+                Book.updateOne({ _id: req.params.id }, { ...bookObject, _id: req.params.id })
+                    .then(() => res.status(200).json({ message: 'Livre modifié!' }))
+                    .catch((error) => res.status(400).json({ error }));
+            };
+
+            if (req.file) {
+                const uploadedImagePath = req.file.path;
+                const compressedImagePath = `images/compressed-${req.file.filename.split('.')[0]}.webp`;
+
+                // Compresser l'image et supprimer l'ancienne
+                sharp(uploadedImagePath)
+                    .resize({ width: 206, height: 260 })
+                    .webp({ quality: 80 })
+                    .toFile(compressedImagePath)
+                    .then(() => {
+                        fs.unlink(uploadedImagePath, (err) => {
+                            if (err) {
+                                console.error('Erreur lors de la suppression de l\'image originale :', err);
+                            } else {
+                                console.log('Image originale supprimée avec succès');
+                            }
+                        });
+                        handleBookUpdate();
+                    })
+                    .catch((error) => {
+                        console.error('Erreur lors de la compression de l\'image :', error);
+                        res.status(500).json({ error: 'Erreur lors de la compression de l\'image' });
+                    });
             } else {
-                Book.updateOne({ _id: req.params.id}, { ...bookObject, _id: req.params.id})
-                .then(() => res.status(200).json({message : 'Livre modifié!'}))
-                .catch(error => res.status(401).json({ error }));
+                handleBookUpdate();
             }
         })
         .catch((error) => {
             res.status(400).json({ error });
         });
- 
 };
+
 
 exports.deleteBook = (req, res, next) => {
     Book.findOne({ _id: req.params.id})
