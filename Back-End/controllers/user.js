@@ -8,7 +8,7 @@ exports.signup = (req, res, next) => {
     const email = req.body.email;
 
     // Regex pour valider l'email
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const emailRegex = /^[^\s@]+@[a-zA-Z]+\.[a-zA-Z]{2,7}$/;
 
     if (!emailRegex.test(email)) {
         return res.status(400).json({ message: 'Veuillez fournir une adresse email valide.' });
